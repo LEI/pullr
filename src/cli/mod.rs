@@ -4,11 +4,12 @@ use clap::Parser;
 
 use crate::{exec, repo::Repo};
 
-/// Pullr
+/// CLI arguments are parsed with [clap](https://docs.rs/clap).
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
     /// Path to the local directory.
+    // FIXME: expand shell to handle tilde
     #[arg(short, long, default_value = ".")]
     path: PathBuf,
 
@@ -19,7 +20,7 @@ pub struct Cli {
     /// Use "upstream" remote.
     #[arg(
         short = 'u',
-        long,
+        long = "upstream",
         default_value_t = false,
         conflicts_with = "remote",
         help_heading = "Remote"
@@ -34,7 +35,7 @@ pub struct Cli {
     // TODO: auto-detect main?
     #[arg(
         short = 'm',
-        long,
+        long = "master",
         default_value_t = false,
         conflicts_with = "branch",
         help_heading = "Branch"
@@ -53,20 +54,21 @@ pub struct Cli {
     #[arg(short, long)]
     command: Option<String>,
 
-    /// Enable dry-run mode where available.
+    /// Enable dry-run mode to disable execution.
     #[arg(short, long, default_value_t = false)]
     dry_run: bool,
 
-    /// Enable verbose mode.
+    /// Enable verbose mode to explain commands.
     #[arg(short, long, default_value_t = false)]
     verbose: bool,
 
-    /// List of pull request IDs.
+    /// List of pull request IDs, at least one is required.
     #[arg(required = true)]
     pull_requests: Vec<usize>,
 }
 
 impl Cli {
+    /// Runs the main command.
     pub fn run(&self) -> anyhow::Result<()> {
         let stdout = io::stdout();
         let mut out = stdout.lock();

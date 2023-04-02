@@ -82,3 +82,8 @@ jobs:
 
       - name: Run cargo clippy
         run: cargo clippy --all-targets --workspace -- -D warnings
+
+      - name: Run cargo doc
+        run: cargo doc --document-private-items --no-deps --workspace
+        env:
+          RUSTDOCFLAGS: -D warnings

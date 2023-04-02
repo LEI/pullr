@@ -26,7 +26,7 @@ impl Repo {
             "git",
             &["diff", "--no-ext-diff", "--quiet"],
             &work_dir,
-            dry_run,
+            false, // Check git status even if dry-run mode is enabled
             out,
         )?;
 
