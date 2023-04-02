@@ -9,7 +9,7 @@ use crate::exec;
 pub(crate) struct Repo {
     dry_run: bool,
     repo: Repository,
-    work_dir: PathBuf,
+    pub(crate) work_dir: PathBuf,
 }
 
 impl Repo {
@@ -247,7 +247,7 @@ impl Repo {
 
         exec::command(
             "git",
-            vec!["branch", "-d", branch],
+            vec!["branch", "-D", branch],
             &self.work_dir,
             self.dry_run,
             out,
@@ -302,7 +302,15 @@ impl Repo {
         out: &mut StdoutLock,
     ) -> anyhow::Result<()> {
         log::debug!("Fetch PR #{}", id);
+
         // git branch -D pr/$PR || true
+        exec::command(
+            "git",
+            vec!["branch", "-D", format!("pr/{}", id).as_str()],
+            &self.work_dir,
+            self.dry_run,
+            out,
+        )?;
 
         // git fetch $REMOTE refs/pull/$PR/head:pr/$PR
         exec::command(
