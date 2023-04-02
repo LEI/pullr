@@ -3,7 +3,7 @@ name = "pullr"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "A single command-line to merge pull requests"
+description = "A single command to merge pull requests"
 repository = "https://github.com/LEI/pullr"
 include = ["src/**/*", "LICENSE", "README.md"]
 

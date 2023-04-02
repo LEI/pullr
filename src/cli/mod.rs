@@ -67,7 +67,7 @@ pub struct Cli {
 }
 
 impl Cli {
-    pub fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn run(&self) -> anyhow::Result<()> {
         let stdout = io::stdout();
         let mut out = stdout.lock();
 
@@ -95,10 +95,6 @@ impl Cli {
             writeln!(out, "# DRY-RUN")?;
         }
 
-        let result = repo.rebase(true, &mut out);
-        if result.is_err() {
-            // Ignore error
-        }
         repo.fetch(&remote, &mut out)?;
         repo.checkout(&branch, false, &mut out)?;
 

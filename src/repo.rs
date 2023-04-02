@@ -9,7 +9,7 @@ use crate::exec;
 pub(crate) struct Repo {
     dry_run: bool,
     verbose: bool,
-    pub(crate) work_dir: PathBuf,
+    work_dir: PathBuf,
 }
 
 impl Repo {
@@ -18,7 +18,7 @@ impl Repo {
         dry_run: bool,
         verbose: bool,
         out: &mut StdoutLock,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> anyhow::Result<Self> {
         let work_dir = path.to_path_buf();
         writeln!(out, "# Working directory {:?}", work_dir.display())?;
 
@@ -102,18 +102,6 @@ impl Repo {
         self.git(&args, out)?;
 
         self.git(&["rebase", local_branch], out)
-    }
-
-    pub(crate) fn rebase(&self, abort: bool, out: &mut StdoutLock) -> anyhow::Result<()> {
-        if self.verbose {
-            writeln!(out, "# Rebase (abort: {})", abort)?;
-        }
-
-        let mut args = vec!["rebase"];
-        if abort {
-            args.push("--abort");
-        }
-        self.git(&args, out)
     }
 
     pub(crate) fn fetch_pull_request(
