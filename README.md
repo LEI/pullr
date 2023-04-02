@@ -1,11 +1,10 @@
 # pullr
 
-Based on the [update batteries](https://github.com/xJonathanLEI/helix/blob/script/update_batteries.sh)
-script by @xJonathanLEI.
+Based on the [update batteries][1] script by @xJonathanLEI.
 
 ## Install
 
-Using [`cargo`](https://doc.rust-lang.org/cargo/getting-started/installation.html):
+Using [cargo][2]:
 
 ```bash
 cargo install pullr
@@ -19,8 +18,19 @@ Merge a single pull request:
 pullr --dry-run 123
 ```
 
-Run a command on success use `master` as main branch:
+Run a command on success and use `master` as main branch:
 
 ```bash
 pullr -c="echo OK" -dm 123
 ```
+
+## Release
+
+Run `cargo release hook` to inspect the changelog generated with [git cliff][3].
+
+Use [`cargo release`][4] to create a new tag and publish the release.
+
+[1]: https://github.com/xJonathanLEI/helix/blob/script/update_batteries.sh
+[2]: https://doc.rust-lang.org/cargo/getting-started/installation.html
+[3]: https://github.com/orhun/git-cliff
+[4]: https://github.com/crate-ci/cargo-release

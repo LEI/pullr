@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   # Preview mode: Publishes the build output as a CI artifact instead of creating
@@ -42,6 +42,8 @@ jobs:
             asset_name: pullr-windows-amd64
     steps:
       - uses: actions/checkout@v3
+
+      - uses: Swatinem/rust-cache@v2
 
       - name: Run cargo build
         run: cargo build --release --locked
