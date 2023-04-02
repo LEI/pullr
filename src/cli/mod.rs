@@ -1,9 +1,17 @@
+use std::{io, path::PathBuf};
+
 use clap::Parser;
+
+use crate::repo::Repo;
 
 /// Pullr
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
-struct Args {
+pub struct Cli {
+    /// Path to the local directory.
+    #[arg(short, long, default_value = ".")]
+    path: PathBuf,
+
     /// Remote repository.
     #[arg(short, long, default_value = "origin")]
     remote: String,
@@ -12,46 +20,67 @@ struct Args {
     #[arg(short, long, default_value = "master")]
     branch: String,
 
-    // #[arg(short, long = "pull")]
-    pull_requests: Vec<String>,
+    /// Temporary branch.
+    #[arg(short, long, default_value = "temp")]
+    tmp_branch: String,
+
+    /// Local branch.
+    #[arg(short, long, default_value = "pullr")]
+    local_branch: String,
+
+    /// Shell command to run if the run was successful.
+    #[arg(short, long, default_value = "")]
+    command: String,
+
+    /// Enable dry-run mode where available.
+    #[arg(short, long, default_value_t = false)]
+    dry_run: bool,
+
+    /// List of pull request IDs.
+    pull_requests: Vec<usize>,
 }
 
-// https://github.com/Byron/gitoxide/blob/main/gix/examples/stats.rs
-fn detect_current_repo() -> Result<(), Box<dyn std::error::Error>> {
-    let mut repo = gix::discover(".")?;
-    println!(
-        "Repo: {}",
-        repo.work_dir().unwrap_or_else(|| repo.git_dir()).display()
-    );
+impl Cli {
+    pub fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let remote = &self.remote;
+        let branch = &self.branch;
+        let local_branch = &self.local_branch;
+        let pull_requests = &self.pull_requests;
 
-    let mut max_commit_size = 0;
-    let mut avg_commit_size = 0;
-    repo.object_cache_size(32 * 1024);
-    let commit_ids = repo
-        .head()?
-        .into_fully_peeled_id()
-        .ok_or("There are no commits - nothing to do here.")??
-        .ancestors()
-        .all()?
-        .inspect(|id| {
-            if let Ok(Ok(object)) = id.as_ref().map(|id| id.object()) {
-                avg_commit_size += object.data.len();
-                if object.data.len() > max_commit_size {
-                    max_commit_size = object.data.len();
-                }
-            }
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    println!("Num Commits: {}", commit_ids.len());
-    println!("Max commit Size: {}", max_commit_size);
-    println!("Avg commit Size: {}", avg_commit_size / commit_ids.len());
+        let stdout = io::stdout();
+        let mut out = stdout.lock();
 
-    Ok(())
-}
+        let repo = Repo::discover(&self.path, self.dry_run)?;
 
-pub fn parse() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Args::parse();
-    println!("{:#?}", args);
+        if self.dry_run {
+            log::warn!("DRY-RUN");
+        }
 
-    detect_current_repo()
+        let res = repo.rebase(true, &mut out);
+        if res.is_err() {
+            // Ignore error
+        }
+        repo.fetch(remote, &mut out)?;
+        repo.checkout(branch, false, &mut out)?;
+
+        let res = repo.delete(local_branch, &mut out);
+        if res.is_err() {
+            // Ignore error
+        }
+        repo.checkout(local_branch, true, &mut out)?;
+        repo.reset(remote, branch, local_branch, true, &mut out)?;
+
+        for pr in pull_requests {
+            repo.fetch_pull_request(remote, pr, &mut out)?;
+        }
+
+        for pr in pull_requests {
+            repo.add_pull_request(&self.tmp_branch, &self.local_branch, pr, &mut out)?;
+        }
+
+        // Install the branch with this command
+        // cargo install --locked --path helix-term
+
+        Ok(())
+    }
 }
