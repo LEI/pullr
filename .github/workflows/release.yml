@@ -3,6 +3,8 @@ name: Release
 
 on:
   pull_request:
+    branches:
+      - "releases/**"
     paths:
       - ".github/workflows/release.yml"
   push:
@@ -44,6 +46,14 @@ jobs:
       - name: Run cargo build
         run: cargo build --release --locked
 
+      # https://github.com/actions/upload-artifact
+      - name: Upload binaries as artifact
+        uses: actions/upload-artifact@v3
+        if: env.preview == 'true'
+        with:
+          name: ${{ matrix.asset_name }}
+          path: target/release/${{ matrix.artifact_name }}
+
       # https://github.com/svenstaro/upload-release-action
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
@@ -52,11 +62,3 @@ jobs:
           file: target/release/${{ matrix.artifact_name }}
           asset_name: ${{ matrix.asset_name }}
           overwrite: true
-
-      # https://github.com/actions/upload-artifact
-      - name: Upload binaries as artifact
-        uses: actions/upload-artifact@v3
-        if: env.preview == 'true'
-        with:
-          name: ${{ matrix.asset_name }}
-          file: target/release/${{ matrix.artifact_name }}
