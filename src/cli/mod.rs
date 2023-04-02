@@ -1,57 +1,130 @@
+use std::{io, io::Write, path::PathBuf};
+
 use clap::Parser;
 
-/// Pullr
+use crate::{exec, repo::Repo};
+
+/// CLI arguments are parsed with [clap](https://docs.rs/clap).
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
-struct Args {
+pub struct Cli {
+    /// Path to the local directory.
+    // FIXME: expand shell to handle tilde
+    #[arg(short, long, default_value = ".")]
+    path: PathBuf,
+
     /// Remote repository.
-    #[arg(short, long, default_value = "origin")]
+    #[arg(short, long, default_value = "origin", help_heading = "Remote")]
     remote: String,
 
+    /// Use "upstream" remote.
+    #[arg(
+        short = 'u',
+        long = "upstream",
+        default_value_t = false,
+        conflicts_with = "remote",
+        help_heading = "Remote"
+    )]
+    use_upstream: bool,
+
     /// Main branch.
-    #[arg(short, long, default_value = "master")]
+    #[arg(short, long, default_value = "main", help_heading = "Branch")]
     branch: String,
 
-    // #[arg(short, long = "pull")]
-    pull_requests: Vec<String>,
+    /// Use "master" branch.
+    // TODO: auto-detect main?
+    #[arg(
+        short = 'm',
+        long = "master",
+        default_value_t = false,
+        conflicts_with = "branch",
+        help_heading = "Branch"
+    )]
+    use_master: bool,
+
+    /// Temporary branch.
+    #[arg(short, long, default_value = "temp", help_heading = "Remote")]
+    tmp_branch: String,
+
+    /// Local branch.
+    #[arg(short, long, default_value = "pullr", help_heading = "Remote")]
+    local_branch: String,
+
+    /// Shell command to run if successful.
+    #[arg(short, long)]
+    command: Option<String>,
+
+    /// Enable dry-run mode to disable execution.
+    #[arg(short, long, default_value_t = false)]
+    dry_run: bool,
+
+    /// Enable verbose mode to explain commands.
+    #[arg(short, long, default_value_t = false)]
+    verbose: bool,
+
+    /// List of pull request IDs, at least one is required.
+    #[arg(required = true)]
+    pull_requests: Vec<usize>,
 }
 
-// https://github.com/Byron/gitoxide/blob/main/gix/examples/stats.rs
-fn detect_current_repo() -> Result<(), Box<dyn std::error::Error>> {
-    let mut repo = gix::discover(".")?;
-    println!(
-        "Repo: {}",
-        repo.work_dir().unwrap_or_else(|| repo.git_dir()).display()
-    );
+impl Cli {
+    /// Runs the main command.
+    pub fn run(&self) -> anyhow::Result<()> {
+        let stdout = io::stdout();
+        let mut out = stdout.lock();
 
-    let mut max_commit_size = 0;
-    let mut avg_commit_size = 0;
-    repo.object_cache_size(32 * 1024);
-    let commit_ids = repo
-        .head()?
-        .into_fully_peeled_id()
-        .ok_or("There are no commits - nothing to do here.")??
-        .ancestors()
-        .all()?
-        .inspect(|id| {
-            if let Ok(Ok(object)) = id.as_ref().map(|id| id.object()) {
-                avg_commit_size += object.data.len();
-                if object.data.len() > max_commit_size {
-                    max_commit_size = object.data.len();
-                }
-            }
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    println!("Num Commits: {}", commit_ids.len());
-    println!("Max commit Size: {}", max_commit_size);
-    println!("Avg commit Size: {}", avg_commit_size / commit_ids.len());
+        if self.verbose {
+            writeln!(out, "{:#?}", self)?;
+        }
 
-    Ok(())
-}
+        let remote = if self.use_upstream {
+            "upstream"
+        } else {
+            self.remote.as_str()
+        }
+        .to_string();
 
-pub fn parse() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Args::parse();
-    println!("{:#?}", args);
+        let branch = if self.use_master {
+            "master"
+        } else {
+            self.branch.as_str()
+        }
+        .to_string();
 
-    detect_current_repo()
+        let repo = Repo::discover(&self.path, self.dry_run, self.verbose, &mut out)?;
+
+        if self.dry_run {
+            writeln!(out, "# DRY-RUN")?;
+        }
+
+        repo.fetch(&remote, &mut out)?;
+        repo.checkout(&branch, false, &mut out)?;
+
+        let result = repo.delete(&self.local_branch, &mut out);
+        if result.is_err() {
+            // Ignore error
+        }
+        repo.checkout(&self.local_branch, true, &mut out)?;
+        repo.reset(&remote, &branch, &self.local_branch, true, &mut out)?;
+
+        for pr in &self.pull_requests {
+            repo.fetch_pull_request(&remote, pr, &mut out)?;
+        }
+
+        for pr in &self.pull_requests {
+            repo.add_pull_request(&self.tmp_branch, &self.local_branch, pr, &mut out)?;
+        }
+
+        if let Some(command) = &self.command {
+            exec::command(
+                "sh",
+                &["-c", command.as_str()],
+                &self.path,
+                self.dry_run,
+                &mut out,
+            )?;
+        }
+
+        Ok(())
+    }
 }

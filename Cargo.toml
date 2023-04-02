@@ -2,10 +2,32 @@
 name = "pullr"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "A single command to merge pull requests."
+repository = "https://github.com/LEI/pullr"
+include = ["src/**/*", "LICENSE", "README.md", "CHANGELOG.md"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package.metadata.git-cliff.git]
+# Glob pattern for matching git tags
+tag_pattern = "[0-9]*"
+
+[package.metadata.release]
+tag-name = "{{prefix}}{{version}}"
+pre-release-hook = [
+  "git-cliff",
+  "--latest",
+  "--prepend=CHANGELOG.md",
+  "--tag={{version}}",
+]
+sign-commit = true
+sign-tag = true
 
 [dependencies]
 anyhow = "1.0.70"
 clap = { version = "4.2.1", features = ["derive"] }
-gix = { version = "0.43.1", features = ["async-network-client"] }
+
+[dev-dependencies]
+assert_cmd = "2.0.10"
+
+[lib]
+doctest = false
