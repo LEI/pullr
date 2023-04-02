@@ -10,9 +10,6 @@ include = ["src/**/*", "LICENSE", "README.md"]
 [dependencies]
 anyhow = "1.0.70"
 clap = { version = "4.2.1", features = ["derive"] }
-env_logger = "0.10.0"
-gix = { version = "0.43.1", features = ["async-network-client"] }
-log = "0.4.17"
 
 [dev-dependencies]
 assert_cmd = "2.0.10"

@@ -57,6 +57,10 @@ pub struct Cli {
     #[arg(short, long, default_value_t = false)]
     dry_run: bool,
 
+    /// Enable verbose mode.
+    #[arg(short, long, default_value_t = false)]
+    verbose: bool,
+
     /// List of pull request IDs.
     #[arg(required = true)]
     pull_requests: Vec<usize>,
@@ -64,12 +68,20 @@ pub struct Cli {
 
 impl Cli {
     pub fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let stdout = io::stdout();
+        let mut out = stdout.lock();
+
+        if self.verbose {
+            writeln!(out, "{:#?}", self)?;
+        }
+
         let remote = if self.use_upstream {
             "upstream"
         } else {
             self.remote.as_str()
         }
         .to_string();
+
         let branch = if self.use_master {
             "master"
         } else {
@@ -77,10 +89,7 @@ impl Cli {
         }
         .to_string();
 
-        let stdout = io::stdout();
-        let mut out = stdout.lock();
-
-        let repo = Repo::discover(&self.path, self.dry_run)?;
+        let repo = Repo::discover(&self.path, self.dry_run, self.verbose, &mut out)?;
 
         if self.dry_run {
             writeln!(out, "# DRY-RUN")?;
@@ -111,8 +120,8 @@ impl Cli {
         if let Some(command) = &self.command {
             exec::command(
                 "sh",
-                vec!["-c", command.as_str()],
-                &repo.work_dir,
+                &["-c", command.as_str()],
+                &self.path,
                 self.dry_run,
                 &mut out,
             )?;
