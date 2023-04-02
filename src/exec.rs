@@ -27,11 +27,11 @@ pub(crate) fn command(
         .stdout(Stdio::piped())
         .spawn()?;
 
-    let res = child
+    let result = child
         .wait()
         .with_context(|| format!("error attempting to wait {:?}", str))?;
 
-    if !res.success() {
+    if !result.success() {
         return Err(anyhow::Error::msg(format!(
             "failed to execute command {:?}",
             str

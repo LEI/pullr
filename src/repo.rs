@@ -12,12 +12,6 @@ pub(crate) struct Repo {
     work_dir: PathBuf,
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
-struct Commit {
-    hash: String,
-    message: String,
-}
-
 impl Repo {
     pub(crate) fn discover(
         path: &PathBuf,
@@ -336,14 +330,14 @@ impl Repo {
         log::debug!("Add PR #{}", id);
 
         // git branch -D temp || true
-        let res = exec::command(
+        let result = exec::command(
             "git",
             vec!["branch", "-D", "temp"],
             &self.work_dir,
             self.dry_run,
             out,
         );
-        if res.is_err() {
+        if result.is_err() {
             // Ignore error
         }
         // git checkout -b temp

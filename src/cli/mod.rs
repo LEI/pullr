@@ -47,6 +47,10 @@ impl Cli {
         let local_branch = &self.local_branch;
         let pull_requests = &self.pull_requests;
 
+        if pull_requests.is_empty() {
+            return Err(anyhow::Error::msg("At least one pull request is required").into());
+        }
+
         let stdout = io::stdout();
         let mut out = stdout.lock();
 
@@ -56,15 +60,15 @@ impl Cli {
             log::warn!("DRY-RUN");
         }
 
-        let res = repo.rebase(true, &mut out);
-        if res.is_err() {
+        let result = repo.rebase(true, &mut out);
+        if result.is_err() {
             // Ignore error
         }
         repo.fetch(remote, &mut out)?;
         repo.checkout(branch, false, &mut out)?;
 
-        let res = repo.delete(local_branch, &mut out);
-        if res.is_err() {
+        let result = repo.delete(local_branch, &mut out);
+        if result.is_err() {
             // Ignore error
         }
         repo.checkout(local_branch, true, &mut out)?;
