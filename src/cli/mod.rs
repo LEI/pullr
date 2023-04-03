@@ -2,7 +2,7 @@ use std::{io, io::Write, path::PathBuf};
 
 use clap::Parser;
 
-use crate::{exec, repo::Repo};
+use crate::repo::Repo;
 
 /// CLI arguments are parsed with [clap](https://docs.rs/clap).
 #[derive(Parser, Debug)]
@@ -49,10 +49,6 @@ pub struct Cli {
     /// Local branch.
     #[arg(short, long, default_value = "pullr", help_heading = "Remote")]
     local_branch: String,
-
-    /// Shell command to run if successful.
-    #[arg(short, long)]
-    command: Option<String>,
 
     /// Enable dry-run mode to disable execution.
     #[arg(short, long, default_value_t = false)]
@@ -113,16 +109,6 @@ impl Cli {
 
         for pr in &self.pull_requests {
             repo.add_pull_request(&self.tmp_branch, &self.local_branch, pr, &mut out)?;
-        }
-
-        if let Some(command) = &self.command {
-            exec::command(
-                "sh",
-                &["-c", command.as_str()],
-                &self.path,
-                self.dry_run,
-                &mut out,
-            )?;
         }
 
         Ok(())

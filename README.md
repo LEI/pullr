@@ -18,12 +18,6 @@ Merge a single pull request:
 pullr --dry-run 123
 ```
 
-Run a command on success and use `master` as main branch:
-
-```bash
-pullr -c="echo OK" -dm 123
-```
-
 ## Release
 
 Run `cargo release hook` to inspect the changelog generated with [git cliff][3].
