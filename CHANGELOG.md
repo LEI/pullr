@@ -6,4 +6,5 @@ All notable changes to this project will be documented in this file.
 
 ### Features
 
-- Use standard library process command to execute git
+- Use standard library process to execute git
+
