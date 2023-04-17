@@ -27,7 +27,7 @@ anyhow = "1.0.70"
 clap = { version = "4.2.2", features = ["derive"] }
 
 [dev-dependencies]
-assert_cmd = "2.0.10"
+assert_cmd = "2.0.11"
 
 [lib]
 doctest = false
