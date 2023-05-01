@@ -23,7 +23,7 @@ sign-commit = true
 sign-tag = true
 
 [dependencies]
-anyhow = "1.0.70"
+anyhow = "1.0.71"
 clap = { version = "4.2.5", features = ["derive"] }
 
 [dev-dependencies]
