@@ -24,7 +24,7 @@ sign-tag = true
 
 [dependencies]
 anyhow = "1.0.72"
-clap = { version = "4.3.12", features = ["derive"] }
+clap = { version = "4.3.14", features = ["derive"] }
 
 [dev-dependencies]
 assert_cmd = "2.0.12"
